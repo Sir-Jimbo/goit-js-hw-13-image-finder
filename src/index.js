@@ -45,7 +45,7 @@ function onSearch(e) {
     }
 }
 
-function fetchImages() {
+async function fetchImages() {
     currentCoord = refs.imagesContainer.offsetHeight;
 
     try {
@@ -79,7 +79,7 @@ function getRefs() {
     }
 };
 
-function scrollingPage() {
+async function scrollingPage() {
     try {
         window.scrollTo({
             top: currentCoord,
@@ -92,7 +92,7 @@ function scrollingPage() {
     }
 }
 
-function searchError(hits) {
+async function searchError(hits) {
     try {
         const numberOfImages = hits.length;
         if (numberOfImages === 0) {
