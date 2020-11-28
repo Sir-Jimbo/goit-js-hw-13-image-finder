@@ -1,70 +1,124 @@
 import './css/styles.css';
-
-import '@pnotify/core/dist/BrightTheme.css';
+import ApiService from './js/components/apiService';
+import imagesTpl from './templates/gallery.hbs';
+import LoadMoreBtn from './js/components/load-more-btn';
+import { OpenImage } from './js/components/lightBox';
+const debounce = require('lodash.debounce');
 import '@pnotify/core/dist/PNotify.css';
-import { error } from '@pnotify/core';
+import '@pnotify/core/dist/BrightTheme.css';
+import pnotify from './js/components/pnotify-error';
 
-import countryCardTpl from './templates/country-card.hbs';
-import fetchCountries from './js/fetchCountries';
-
-import getRefs from './js/get-refs';
+// import if from './js/components/infinityScroll.js';
+// import io from './js/components/observerScroll.js';
 
 const refs = getRefs();
 
-const debounce = require('lodash.debounce');
+const loadMoreBtn = new LoadMoreBtn({
+  selector: '[data-action="load-more"]',
+  hidden: true,
+});
 
-refs.searchInput.addEventListener(
-    'input',
-    debounce((onSearch) , 500)
-);
+const apiService = new ApiService();
 
-function onSearch(e) { 
+refs.searchForm.addEventListener('submit', onSearch);
+refs.imagesContainer.addEventListener('click', OpenImage);
+loadMoreBtn.refs.button.addEventListener('click', fetchImages);
 
+let currentCoord = 0;
+
+function onSearch(e) {
     e.preventDefault();
-    const searchInput = e.currentTarget;
-  const searchQuery = refs.searchInput.value;
-    
-    fetchCountries(searchQuery)
-        .then(
-            
-            contries => {
-            
-                if (contries.length > 10) {
-                    error({
-                        text: 'Too many matches found. Please enter a more specific query!',
-                        type: 'info'
-                    });
-                } else if (contries.length >= 2 && contries.length <= 10) {
-                    renderContriesList(contries);
 
-                } else if (contries.length < 2) {
-                    renderCountryCard(contries[0])
-                }
-                else
-                    return onFetchError()
-            })
-        .catch(onFetchError)
-        .finally(clear);
-}
-
-function renderCountryCard(country) {
-    const markup = countryCardTpl(country);
-    refs.cardContainer.innerHTML = markup;
-}
-
-function renderContriesList(countries) {
-    let markup = '<ul>';
-    for (let country of countries) {
-        markup += `<li>${country.name}</li>`;
+    apiService.query = e.currentTarget.elements.query.value;
+     try {
+         if (apiService.query === '') {
+             clearImagesContainer();
+             loadMoreBtn.hide();
+             return alert('Упс...поле не может быть пустым');
     }
-    markup +='</ul>'
-    refs.cardContainer.innerHTML = markup;
+    
+         apiService.resetPage();
+         clearImagesContainer();
+    fetchImages();
+    } catch (error) {
+        console.log(error);
+    }
 }
 
-function onFetchError(error) {
-  alert('Упс, что-то пошло не так и мы не нашли вашей страны!');
+function fetchImages() {
+    currentCoord = refs.imagesContainer.offsetHeight;
+
+    try {
+        loadMoreBtn.show();
+        loadMoreBtn.disable();
+        
+        apiService.fetchImages().then(hits => {
+            appendImagesMarkup(hits);
+            loadMoreBtn.enable();
+            scrollingPage();
+            searchError(hits);
+        });
+    } catch (error) {
+        console.log(error);
+    }
 }
 
-function clear() {
-    refs.searchInput.value = "";  
+function appendImagesMarkup(hits) {
+  refs.imagesContainer.insertAdjacentHTML('beforeend', imagesTpl(hits));
 }
+
+function clearImagesContainer() {
+  refs.imagesContainer.innerHTML = '';
+}
+
+function getRefs() {
+    return {
+        searchForm: document.querySelector('.search-form'),
+        imagesContainer: document.querySelector('.gallery'),
+        sentinel: document.querySelector('#sentinel'),
+    }
+};
+
+function scrollingPage() {
+    try {
+        window.scrollTo({
+            top: currentCoord,
+            left: 0,
+            behavior: 'smooth',
+        });
+    } catch (error) {
+        console.log(error);
+        console.log('Не удалось загрузить скроллинг страницы найденных изображений');
+    }
+}
+
+function searchError(hits) {
+    try {
+        const numberOfImages = hits.length;
+        if (numberOfImages === 0) {
+            pnotify.Error();
+            loadMoreBtn.hide();
+        }
+    } catch (error) {
+        console.log(error);
+        console.log("Не удалось загрузить pnotify-ошибку при поиске изображений");
+    }
+}
+
+/*
+const onEntry = entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && apiService.query !== '') {
+      apiService.fetchImages().then(hits => {
+        appendImagesMarkup(hits);
+        apiService.incrementPage();
+      });
+    }
+  });
+};
+
+const observer = new IntersectionObserver(onEntry, {
+  rootMargin: '150px',
+});
+observer.observe(refs.sentinel);
+*/
