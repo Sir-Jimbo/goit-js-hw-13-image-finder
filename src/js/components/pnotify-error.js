@@ -6,7 +6,7 @@ function Error() {
     return error({
             text: 'Sorry, no images found!',
             title: 'ERROR',
-            delay: 2000,
+            delay: 1000,
             maxTextHeight: null,
             sticker: false,
         });

@@ -1,4 +1,5 @@
 import './css/styles.css';
+import getRefs from './js/components/get-refs';
 import ApiService from './js/components/apiService';
 import imagesTpl from './templates/gallery.hbs';
 import LoadMoreBtn from './js/components/load-more-btn';
@@ -8,8 +9,8 @@ import '@pnotify/core/dist/PNotify.css';
 import '@pnotify/core/dist/BrightTheme.css';
 import pnotify from './js/components/pnotify-error';
 
-// import if from './js/components/infinityScroll.js';
-// import io from './js/components/observerScroll.js';
+ //import './js/components/infinityScroll.js';
+ //import './js/components/observerScroll.js';
 
 const refs = getRefs();
 
@@ -18,11 +19,11 @@ const loadMoreBtn = new LoadMoreBtn({
   hidden: true,
 });
 
-const apiService = new ApiService();
-
 refs.searchForm.addEventListener('submit', onSearch);
 refs.imagesContainer.addEventListener('click', OpenImage);
 loadMoreBtn.refs.button.addEventListener('click', fetchImages);
+
+const apiService = new ApiService();
 
 let currentCoord = 0;
 
@@ -35,20 +36,24 @@ function onSearch(e) {
              clearImagesContainer();
              loadMoreBtn.hide();
              return alert('Упс...поле не может быть пустым');
-    }
+         }
     
-         apiService.resetPage();
-         clearImagesContainer();
+    apiService.resetPage();
+    clearImagesContainer();
     fetchImages();
-    } catch (error) {
+    
+    }
+     
+     catch (error) {
         console.log(error);
     }
 }
 
-async function fetchImages() {
+function fetchImages() {
     currentCoord = refs.imagesContainer.offsetHeight;
 
     try {
+        
         loadMoreBtn.show();
         loadMoreBtn.disable();
         
@@ -58,7 +63,8 @@ async function fetchImages() {
             scrollingPage();
             searchError(hits);
         });
-    } catch (error) {
+    }
+    catch (error) {
         console.log(error);
     }
 }
@@ -71,15 +77,7 @@ function clearImagesContainer() {
   refs.imagesContainer.innerHTML = '';
 }
 
-function getRefs() {
-    return {
-        searchForm: document.querySelector('.search-form'),
-        imagesContainer: document.querySelector('.gallery'),
-        sentinel: document.querySelector('#sentinel'),
-    }
-};
-
-async function scrollingPage() {
+function scrollingPage() {
     try {
         window.scrollTo({
             top: currentCoord,
@@ -92,7 +90,7 @@ async function scrollingPage() {
     }
 }
 
-async function searchError(hits) {
+function searchError(hits) {
     try {
         const numberOfImages = hits.length;
         if (numberOfImages === 0) {
@@ -104,7 +102,6 @@ async function searchError(hits) {
         console.log("Не удалось загрузить pnotify-ошибку при поиске изображений");
     }
 }
-
 /*
 const onEntry = entries => {
   entries.forEach(entry => {
